@@ -1,0 +1,51 @@
+name: Product CI/CD Pipeline Prod
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    # Khởi tạo một service MongoDB chạy ngầm trên máy ảo của GitHub
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval \"db.adminCommand('ping')\""
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Start Product API Server in background
+        env:
+          PORT: 5000
+          # Kết nối tới MongoDB service vừa tạo ở trên (localhost trên máy ảo GitHub)
+          MONGODB_URI: mongodb://localhost:27017/product_db_test
+        run: |
+          npm start &
+          # Đợi 10 giây để server Node.js và MongoDB kết nối ổn định
+          sleep 10
+
+      - name: Run Healthcheck Test
+        run: |
+          echo "Testing /health endpoint..."
+          curl -f http://localhost:5000/health
+          echo -e "\nCI Test Passed: Database connected and API is healthy!"
