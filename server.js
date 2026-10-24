@@ -16,7 +16,7 @@ app.use(cors());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP', timestamp: new Date() });
+  res.status(200).json({ status: 'UP AND AUTOMATED!', timestamp: new Date() });
 });
 
 // Kết nối MongoDB (nammongodb container)

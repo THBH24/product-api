@@ -1,0 +1,48 @@
+services:
+  # Dịch vụ Database MongoDB (giữ nguyên)
+  mongodb:
+    image: mongo:latest
+    container_name: nammongodb-prod
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data_prod:/data/db
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Dịch vụ API kéo từ Docker Hub (giữ nguyên, nhớ đổi [TEN_DANG_NHAP_DOCKER] của bạn)
+  app:
+    image: thuyenduong/product-api:latest
+    container_name: product-api-prod
+    ports:
+      - "5002:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=mongodb://mongodb:27017/product_db_prod
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "node", "-e", "async function check() { try { const res = await fetch('http://localhost:5000/health'); process.exit(res.ok ? 0 : 1); } catch (e) { process.exit(1); } } check();"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Dịch vụ Watchtower tự động cập nhật
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 product-api-prod
+    restart: always
+
+volumes:
+  mongo_data_prod:
