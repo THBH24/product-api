@@ -39,6 +39,8 @@ services:
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower
+    environment:
+      - DOCKER_API_VERSION=1.41   # Thêm dòng này để ép dùng API mới
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --interval 30 product-api-prod
